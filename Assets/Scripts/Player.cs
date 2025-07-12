@@ -24,7 +24,8 @@ public class Player : MonoBehaviour
     public int maxHP = 100;
     public int currentHP;
     public int attackDamege;
-    public float attackDelay = 2;
+    public float attackDelay = 1f;
+    public float changeDelay = 2f;
     public EmotionState emostate;
 
     private Rigidbody2D rb;
@@ -35,6 +36,7 @@ public class Player : MonoBehaviour
     {
         rb = GetComponent<Rigidbody2D>();
         currentHP = maxHP;
+        emostate = EmotionState.HAPPY;
     }
 
     void Update()
@@ -42,6 +44,42 @@ public class Player : MonoBehaviour
         moveInput = Input.GetAxis("Horizontal");
 
         if (Input.GetButtonDown("Jump") && isGround) rb.velocity = new Vector2(rb.velocity.x, jumpPower);
+
+        if(changeDelay > 0f) changeDelay -= Time.deltaTime;
+
+        if (Input.GetKeyDown(KeyCode.Q) && changeDelay <= 0f)
+        {
+            emostate = (EmotionState)(((int)emostate + 1) % System.Enum.GetValues(typeof(EmotionState)).Length);
+            Debug.Log(emostate);
+            changeDelay = 2f;
+        }
+
+        Debug.Log(changeDelay);
+        if (changeDelay <= 0f) Debug.Log("ÄðÅ¸ÀÓ ´Ù½Ã µ¼");
+
+        switch (emostate)
+        {
+            case (EmotionState.HAPPY):
+                moveSpeed = 7f;
+                attackDamege = 10;
+                attackDelay = 1f;
+
+                break;
+
+            case (EmotionState.SAD):
+                moveSpeed = 3f;
+                attackDamege = 7;
+                attackDelay = 2f;
+
+                break;
+
+            case (EmotionState.ANGER):
+                moveSpeed = 10f;
+                attackDamege = 15;
+                attackDelay = 0.3f;
+
+                break;
+        }
 
     }
 
@@ -54,30 +92,4 @@ public class Player : MonoBehaviour
         rb.drag = isGround ? moveSpeed : 0;
     }
 
-    public void EmoChange()
-    {
-        switch (emostate)
-        {
-            case (EmotionState.HAPPY):
-                moveSpeed = 7f;
-                attackDamege = 10;
-                attackDelay = 2f;
-
-                break;
-
-            case (EmotionState.SAD):
-                moveSpeed = 3f;
-                attackDamege = 7;
-                attackDelay = 2.5f;
-
-                break;
-
-            case (EmotionState.ANGER):
-                moveSpeed = 10f;
-                attackDamege = 15;
-                attackDelay = 1f;
-
-                break;
-        }
-    }
 }
