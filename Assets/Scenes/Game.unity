@@ -4795,18 +4795,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   moveSpeed: 5
   jumpPower: 17
-  groundCheck: {fileID: 1647258307}
-  groundRabius: 0.1
-  GroundLayer:
-    serializedVersion: 2
-    m_Bits: 8
   maxHP: 100
   currentHP: 0
-  attackDamege: 0
+  attackDamage: 0
   isSkill: 0
   anim: {fileID: 0}
-  emostate: 0
-  Animstate: 0
+  emotionState: 0
+  animState: 0
+  isGround: 0
 --- !u!50 &268899424
 Rigidbody2D:
   serializedVersion: 4
