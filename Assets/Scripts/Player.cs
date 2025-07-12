@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 public enum EmotionState
 {
@@ -31,19 +32,27 @@ public class Player : MonoBehaviour
     public bool isSkill = false;
     public Animator anim;
     public EmotionState emotionState;
+    bool Jump;
+
+    [Header("대쉬 설정")]
+    public float dashSpeed = 20f;
+    public float dashDuration = 0.2f;
+    public float dashCooldown = 1f;
+
+    private bool isDashing = false;
+    private float dashCooldownTimer = 0f;
 
     public enum AnimState
     {
         IDLE,
         WALK,
         JUMP,
-        ATTACK
+        DASH
     }
-    public AnimState animState = AnimState.IDLE;
 
     private Rigidbody2D rb;
     private SpriteRenderer sr;
-    public bool isGround; // 바닥에 닿았는지 체크하는 변수
+    public bool isGround;
     private float moveInput;
     private Coroutine changeCoroutine;
 
@@ -53,6 +62,7 @@ public class Player : MonoBehaviour
         sr = rb.GetComponent<SpriteRenderer>();
         anim = GetComponent<Animator>();
         currentHP = maxHP;
+        attackDamage = 10;
         StartCoroutine(EmoChangeState());
         emotionState = EmotionState.HAPPY;
     }
@@ -66,31 +76,36 @@ public class Player : MonoBehaviour
     {
         moveInput = Input.GetAxis("Horizontal");
 
-        // 방향 전환 (A키는 왼쪽, D키는 오른쪽)
-        if (moveInput < 0) // 왼쪽으로 이동
+        // 방향 전환
+        if (moveInput < 0)
+            sr.flipX = false;
+        else if (moveInput > 0)
+            sr.flipX = true;
+
+        // 점프 입력
+        if (Input.GetKeyDown(KeyCode.Space) && isGround && !Jump && !isDashing)
         {
-            sr.flipX = false; // 왼쪽을 보게 함
-        }
-        else if (moveInput > 0) // 오른쪽으로 이동
-        {
-            sr.flipX = true; // 오른쪽을 보게 함
+            Jump = true;
+            rb.velocity = new Vector2(rb.velocity.x, jumpPower);
+            AnimOn((int)AnimState.JUMP);
         }
 
-        // 스페이스바로 점프 처리
-        if (Input.GetKeyDown(KeyCode.Space) && isGround)
+        // 대쉬 입력
+        if (Input.GetKeyDown(KeyCode.LeftShift) && !isDashing && dashCooldownTimer <= 0f)
         {
-            rb.velocity = new Vector2(rb.velocity.x, jumpPower); // 수평 속도는 그대로 두고, 수직 속도만 jumpPower로 변경
-            AnimOn(2); // 점프 애니메이션
-        }
-        else if (Mathf.Abs(moveInput) > 0.1f) // 좌우 이동 처리
-        {
-            AnimOn(1); // 걷기 애니메이션
-        }
-        else
-        {
-            AnimOn(0); // 대기 애니메이션
+            StartCoroutine(Dash());
         }
 
+        // 이동 & 대기 애니메이션
+        if (!Jump && !isDashing)
+        {
+            if (Mathf.Abs(moveInput) > 0.1f)
+                AnimOn((int)AnimState.WALK);
+            else
+                AnimOn((int)AnimState.IDLE);
+        }
+
+        // 감정 전환
         if (changeDelay > 0f) changeDelay -= Time.deltaTime;
         if (skillDelay > 0f) skillDelay -= Time.deltaTime;
 
@@ -102,6 +117,7 @@ public class Player : MonoBehaviour
             changeDelay = 2f;
         }
 
+        // 스킬 발동
         if (Input.GetKeyDown(KeyCode.Q) && skillDelay <= 0f && !isSkill)
         {
             StartCoroutine(ActiveSkill());
@@ -109,16 +125,41 @@ public class Player : MonoBehaviour
         }
     }
 
-
     void FixedUpdate()
     {
-        // Raycast로 바닥 확인 (Player 위치에서 아래로 Ray를 쏴서 바닥 감지)
-        isGround = Physics2D.Raycast(transform.position, Vector2.down, 1.5f, LayerMask.GetMask("Ground")); // 0.2f 범위로 Ray를 쏴서 바닥을 체크
+        Vector2 Position = transform.position;
+        Position.y -= 1;
+        isGround = Physics2D.Raycast(Position, Vector2.down, 0.3f, LayerMask.GetMask("Ground"));
 
-        // 수평 이동
-        rb.velocity = new Vector2(moveInput * moveSpeed, rb.velocity.y);
+        if (isGround && Jump)
+        {
+            Jump = false;
+            if (!isDashing)
+                AnimOn((int)AnimState.IDLE);
+        }
 
-        rb.drag = isGround ? 4f : 0f; // 땅에 있을 때는 마찰을 줘서 미끄러지지 않도록 처리
+        if (!isDashing)
+            rb.velocity = new Vector2(moveInput * moveSpeed, rb.velocity.y);
+
+        rb.drag = isGround ? 4f : 0f;
+    }
+
+    IEnumerator Dash()
+    {
+        isDashing = true;
+        dashCooldownTimer = dashCooldown;
+
+        float direction = sr.flipX ? -1f : 1f;
+        rb.velocity = new Vector2(direction * dashSpeed, 0f);
+
+        AnimOn((int)AnimState.DASH);
+
+        yield return new WaitForSeconds(dashDuration);
+
+        isDashing = false;
+
+        if (isGround)
+            AnimOn((int)AnimState.IDLE);
     }
 
     IEnumerator EmoChangeState()
@@ -139,13 +180,11 @@ public class Player : MonoBehaviour
                     attackDelay = 1f;
                     Debug.Log("회복");
                     break;
-
                 case EmotionState.SAD:
                     moveSpeed = 4f;
                     attackDamage = 20;
                     attackDelay = 2f;
                     break;
-
                 case EmotionState.ANGER:
                     moveSpeed = 10f;
                     attackDamage = 15;
@@ -169,10 +208,10 @@ public class Player : MonoBehaviour
         yield return new WaitForSeconds(7f);
         isSkill = false;
         skillDelay = 15f;
+
         if (changeCoroutine != null)
-        {
             StopCoroutine(changeCoroutine);
-        }
+
         changeCoroutine = StartCoroutine(EmoChangeState());
 
         Debug.Log("스킬 종료");
@@ -180,6 +219,6 @@ public class Player : MonoBehaviour
 
     void AnimOn(int n)
     {
-        anim.SetInteger("PlayerAnimState", n); // 애니메이션 상태 변경
+        anim.SetInteger("PlayerAnimState", n);
     }
 }
