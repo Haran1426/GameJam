@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
 
 public enum EmotionState
@@ -22,21 +21,16 @@ public class Player : MonoBehaviour
     public float moveSpeed;
     public float jumpPower;
 
-    [Header("¶¥ ®G")]
-    public Transform groundCheck;
-    public float groundRabius = 0.2f;
-    public LayerMask GroundLayer;
-
     [Header("ÇÃ·¹ÀÌ¾î »óÅÂ")]
     public int maxHP = 100;
     public int currentHP;
-    public int attackDamege;
+    public int attackDamage;
     private float attackDelay = 1f;
     private float changeDelay = 2f;
     private float skillDelay = 15f;
     public bool isSkill = false;
     public Animator anim;
-    public EmotionState emostate;
+    public EmotionState emotionState;
 
     public enum AnimState
     {
@@ -45,11 +39,11 @@ public class Player : MonoBehaviour
         JUMP,
         ATTACK
     }
-    public AnimState Animstate= AnimState.IDLE;
+    public AnimState animState = AnimState.IDLE;
 
     private Rigidbody2D rb;
     private SpriteRenderer sr;
-    private bool isGround;
+    public bool isGround; // ¹Ù´Ú¿¡ ´ê¾Ò´ÂÁö Ã¼Å©ÇÏ´Â º¯¼ö
     private float moveInput;
     private Coroutine changeCoroutine;
 
@@ -60,95 +54,107 @@ public class Player : MonoBehaviour
         anim = GetComponent<Animator>();
         currentHP = maxHP;
         StartCoroutine(EmoChangeState());
-        emostate = EmotionState.HAPPY;
+        emotionState = EmotionState.HAPPY;
     }
 
     void Start()
     {
-        changeCoroutine = StartCoroutine(EmoChangeState());    
+        changeCoroutine = StartCoroutine(EmoChangeState());
     }
 
     void Update()
     {
         moveInput = Input.GetAxis("Horizontal");
 
-        if (Input.GetButtonDown("Jump") && isGround)
+        // ¹æÇâ ÀüÈ¯ (AÅ°´Â ¿ÞÂÊ, DÅ°´Â ¿À¸¥ÂÊ)
+        if (moveInput < 0) // ¿ÞÂÊÀ¸·Î ÀÌµ¿
         {
-            rb.velocity = new Vector2(rb.velocity.x, jumpPower);
-            AnimOn(2);
+            sr.flipX = false; // ¿ÞÂÊÀ» º¸°Ô ÇÔ
         }
-        else if (Mathf.Abs(moveInput) > 0.1f)
+        else if (moveInput > 0) // ¿À¸¥ÂÊÀ¸·Î ÀÌµ¿
         {
-            AnimOn(1);
+            sr.flipX = true; // ¿À¸¥ÂÊÀ» º¸°Ô ÇÔ
         }
-        else AnimOn(0);
 
-        if(changeDelay > 0f) changeDelay -= Time.deltaTime;
-        if(skillDelay > 0f) skillDelay -= Time.deltaTime;
+        // ½ºÆäÀÌ½º¹Ù·Î Á¡ÇÁ Ã³¸®
+        if (Input.GetKeyDown(KeyCode.Space) && isGround)
+        {
+            rb.velocity = new Vector2(rb.velocity.x, jumpPower); // ¼öÆò ¼Óµµ´Â ±×´ë·Î µÎ°í, ¼öÁ÷ ¼Óµµ¸¸ jumpPower·Î º¯°æ
+            AnimOn(2); // Á¡ÇÁ ¾Ö´Ï¸ÞÀÌ¼Ç
+        }
+        else if (Mathf.Abs(moveInput) > 0.1f) // ÁÂ¿ì ÀÌµ¿ Ã³¸®
+        {
+            AnimOn(1); // °È±â ¾Ö´Ï¸ÞÀÌ¼Ç
+        }
+        else
+        {
+            AnimOn(0); // ´ë±â ¾Ö´Ï¸ÞÀÌ¼Ç
+        }
+
+        if (changeDelay > 0f) changeDelay -= Time.deltaTime;
+        if (skillDelay > 0f) skillDelay -= Time.deltaTime;
 
         if (Input.GetKeyDown(KeyCode.E) && changeDelay <= 0f && !isSkill)
         {
-            emostate = (EmotionState)(((int)emostate + 1) % System.Enum.GetValues(typeof(EmotionState)).Length);
+            emotionState = (EmotionState)(((int)emotionState + 1) % System.Enum.GetValues(typeof(EmotionState)).Length);
             EmoChangeState();
-            Debug.Log(emostate);
+            Debug.Log(emotionState);
             changeDelay = 2f;
         }
 
-        if(Input.GetKeyDown(KeyCode.Q) && skillDelay <= 0f && !isSkill)
+        if (Input.GetKeyDown(KeyCode.Q) && skillDelay <= 0f && !isSkill)
         {
             StartCoroutine(ActiveSkill());
             Debug.Log("½ºÅ³ »ç¿ë");
         }
-        
     }
+
 
     void FixedUpdate()
     {
-        isGround = Physics2D.OverlapCircle(groundCheck.position, groundRabius, GroundLayer);
+        // Raycast·Î ¹Ù´Ú È®ÀÎ (Player À§Ä¡¿¡¼­ ¾Æ·¡·Î Ray¸¦ ½÷¼­ ¹Ù´Ú °¨Áö)
+        isGround = Physics2D.Raycast(transform.position, Vector2.down, 1.5f, LayerMask.GetMask("Ground")); // 0.2f ¹üÀ§·Î Ray¸¦ ½÷¼­ ¹Ù´ÚÀ» Ã¼Å©
 
+        // ¼öÆò ÀÌµ¿
         rb.velocity = new Vector2(moveInput * moveSpeed, rb.velocity.y);
 
-        rb.drag = isGround ? 4f : 0f;
+        rb.drag = isGround ? 4f : 0f; // ¶¥¿¡ ÀÖÀ» ¶§´Â ¸¶ÂûÀ» Áà¼­ ¹Ì²ô·¯ÁöÁö ¾Êµµ·Ï Ã³¸®
     }
 
     IEnumerator EmoChangeState()
     {
         while (true)
         {
-            if(isSkill)
+            if (isSkill)
             {
                 yield return null;
                 continue;
             }
 
-            switch (emostate)
+            switch (emotionState)
             {
-                case (EmotionState.HAPPY):
+                case EmotionState.HAPPY:
                     moveSpeed = 7f;
-                    attackDamege = 10;
+                    attackDamage = 10;
                     attackDelay = 1f;
                     Debug.Log("È¸º¹");
-
                     break;
 
-                case (EmotionState.SAD):
+                case EmotionState.SAD:
                     moveSpeed = 4f;
-                    attackDamege = 20;
+                    attackDamage = 20;
                     attackDelay = 2f;
-
                     break;
 
-                case (EmotionState.ANGER):
+                case EmotionState.ANGER:
                     moveSpeed = 10f;
-                    attackDamege = 15;
+                    attackDamage = 15;
                     attackDelay = 0.3f;
                     Debug.Log("¾ÆÇÄ");
-
                     break;
             }
             yield return new WaitForSeconds(1f);
         }
-        
     }
 
     IEnumerator ActiveSkill()
@@ -156,14 +162,14 @@ public class Player : MonoBehaviour
         isSkill = true;
 
         moveSpeed = 10f;
-        attackDamege = 20;
+        attackDamage = 20;
         attackDelay = 0.3f;
         Debug.Log("½ºÅ³ »ç¿ëÁß");
 
         yield return new WaitForSeconds(7f);
         isSkill = false;
         skillDelay = 15f;
-        if(changeCoroutine != null)
+        if (changeCoroutine != null)
         {
             StopCoroutine(changeCoroutine);
         }
@@ -174,7 +180,6 @@ public class Player : MonoBehaviour
 
     void AnimOn(int n)
     {
-        anim.SetInteger("PlayerAnimState", n);
+        anim.SetInteger("PlayerAnimState", n); // ¾Ö´Ï¸ÞÀÌ¼Ç »óÅÂ º¯°æ
     }
-
 }
