@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public enum EmotionState
@@ -7,6 +8,12 @@ public enum EmotionState
     HAPPY,
     SAD,
     ANGER
+}
+
+public enum SkillState
+{
+    NOMAL,
+    SKILL
 }
 
 public class Player : MonoBehaviour
@@ -26,6 +33,8 @@ public class Player : MonoBehaviour
     public int attackDamege;
     public float attackDelay = 1f;
     public float changeDelay = 2f;
+    public float skillDelay = 15f;
+    public bool isSkill = false;
     public EmotionState emostate;
 
     private Rigidbody2D rb;
@@ -36,6 +45,7 @@ public class Player : MonoBehaviour
     {
         rb = GetComponent<Rigidbody2D>();
         currentHP = maxHP;
+        StartCoroutine(EmoChangeState());
         emostate = EmotionState.HAPPY;
     }
 
@@ -46,41 +56,22 @@ public class Player : MonoBehaviour
         if (Input.GetButtonDown("Jump") && isGround) rb.velocity = new Vector2(rb.velocity.x, jumpPower);
 
         if(changeDelay > 0f) changeDelay -= Time.deltaTime;
+        if(skillDelay > 0f) skillDelay -= Time.deltaTime;
 
-        if (Input.GetKeyDown(KeyCode.Q) && changeDelay <= 0f)
+        if (Input.GetKeyDown(KeyCode.E) && changeDelay <= 0f && !isSkill)
         {
             emostate = (EmotionState)(((int)emostate + 1) % System.Enum.GetValues(typeof(EmotionState)).Length);
+            EmoChangeState();
             Debug.Log(emostate);
             changeDelay = 2f;
         }
 
-        Debug.Log(changeDelay);
-        if (changeDelay <= 0f) Debug.Log("쿨타임 다시 돔");
-
-        switch (emostate)
+        if(Input.GetKeyDown(KeyCode.Q) && skillDelay <= 0f && !isSkill)
         {
-            case (EmotionState.HAPPY):
-                moveSpeed = 7f;
-                attackDamege = 10;
-                attackDelay = 1f;
-
-                break;
-
-            case (EmotionState.SAD):
-                moveSpeed = 3f;
-                attackDamege = 7;
-                attackDelay = 2f;
-
-                break;
-
-            case (EmotionState.ANGER):
-                moveSpeed = 10f;
-                attackDamege = 15;
-                attackDelay = 0.3f;
-
-                break;
+            StartCoroutine(ActiveSkill());
+            Debug.Log("스킬 사용");
         }
-
+        
     }
 
     void FixedUpdate()
@@ -90,6 +81,56 @@ public class Player : MonoBehaviour
         rb.velocity = new Vector2(moveInput * moveSpeed, rb.velocity.y);
 
         rb.drag = isGround ? moveSpeed : 0;
+    }
+
+    IEnumerator EmoChangeState()
+    {
+        while (true)
+        {
+            switch (emostate)
+            {
+                case (EmotionState.HAPPY):
+                    moveSpeed = 7f;
+                    attackDamege = 10;
+                    attackDelay = 1f;
+                    Debug.Log("회복");
+
+                    break;
+
+                case (EmotionState.SAD):
+                    moveSpeed = 4f;
+                    attackDamege = 20;
+                    attackDelay = 2f;
+
+                    break;
+
+                case (EmotionState.ANGER):
+                    moveSpeed = 10f;
+                    attackDamege = 15;
+                    attackDelay = 0.3f;
+                    Debug.Log("아픔");
+
+                    break;
+            }
+            yield return new WaitForSeconds(1f);
+        }
+        
+    }
+
+    IEnumerator ActiveSkill()
+    {
+        isSkill = true;
+
+        moveSpeed = 10f;
+        attackDamege = 20;
+        attackDelay = 0.3f;
+        Debug.Log("스킬 사용중");
+
+        yield return new WaitForSeconds(7f);
+        isSkill = false;
+        skillDelay = 10f;
+        EmoChangeState();
+        Debug.Log("스킬 종료");
     }
 
 }
