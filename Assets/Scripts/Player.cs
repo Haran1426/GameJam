@@ -27,8 +27,8 @@ public class Player : MonoBehaviour
     public int currentHP;
     public int attackDamage;
     private float attackDelay = 1f;
-    private float changeDelay = 2f;
-    private float skillDelay = 15f;
+    public float changeDelay = 2f;
+    public float skillDelay = 15f;
     public bool isSkill = false;
     public Animator anim;
     public EmotionState emotionState;
