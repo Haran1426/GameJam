@@ -31,29 +31,57 @@ public class Player : MonoBehaviour
     public int maxHP = 100;
     public int currentHP;
     public int attackDamege;
-    public float attackDelay = 1f;
-    public float changeDelay = 2f;
-    public float skillDelay = 15f;
+    private float attackDelay = 1f;
+    private float changeDelay = 2f;
+    private float skillDelay = 15f;
     public bool isSkill = false;
+    public Animator anim;
     public EmotionState emostate;
 
+    public enum AnimState
+    {
+        IDLE,
+        WALK,
+        JUMP,
+        ATTACK
+    }
+    public AnimState Animstate= AnimState.IDLE;
+
     private Rigidbody2D rb;
+    private SpriteRenderer sr;
     private bool isGround;
     private float moveInput;
+    private Coroutine changeCoroutine;
 
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
+        sr = rb.GetComponent<SpriteRenderer>();
+        anim = GetComponent<Animator>();
         currentHP = maxHP;
         StartCoroutine(EmoChangeState());
         emostate = EmotionState.HAPPY;
+    }
+
+    void Start()
+    {
+        changeCoroutine = StartCoroutine(EmoChangeState());    
     }
 
     void Update()
     {
         moveInput = Input.GetAxis("Horizontal");
 
-        if (Input.GetButtonDown("Jump") && isGround) rb.velocity = new Vector2(rb.velocity.x, jumpPower);
+        if (Input.GetButtonDown("Jump") && isGround)
+        {
+            rb.velocity = new Vector2(rb.velocity.x, jumpPower);
+            AnimOn(2);
+        }
+        else if (Mathf.Abs(moveInput) > 0.1f)
+        {
+            AnimOn(1);
+        }
+        else AnimOn(0);
 
         if(changeDelay > 0f) changeDelay -= Time.deltaTime;
         if(skillDelay > 0f) skillDelay -= Time.deltaTime;
@@ -80,13 +108,19 @@ public class Player : MonoBehaviour
 
         rb.velocity = new Vector2(moveInput * moveSpeed, rb.velocity.y);
 
-        rb.drag = isGround ? moveSpeed : 0;
+        rb.drag = isGround ? 4f : 0f;
     }
 
     IEnumerator EmoChangeState()
     {
         while (true)
         {
+            if(isSkill)
+            {
+                yield return null;
+                continue;
+            }
+
             switch (emostate)
             {
                 case (EmotionState.HAPPY):
@@ -128,9 +162,19 @@ public class Player : MonoBehaviour
 
         yield return new WaitForSeconds(7f);
         isSkill = false;
-        skillDelay = 10f;
-        EmoChangeState();
+        skillDelay = 15f;
+        if(changeCoroutine != null)
+        {
+            StopCoroutine(changeCoroutine);
+        }
+        changeCoroutine = StartCoroutine(EmoChangeState());
+
         Debug.Log("스킬 종료");
+    }
+
+    void AnimOn(int n)
+    {
+        anim.SetInteger("PlayerAnimState", n);
     }
 
 }
