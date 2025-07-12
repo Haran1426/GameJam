@@ -9,6 +9,7 @@ public class GamePause : MonoBehaviour
     [SerializeField] GameObject pauseMenuUI; //게임퍼즈 팝업창
     [SerializeField] GameObject background; //뒷 배경
     [SerializeField] GameObject Setting; //설정창
+    [SerializeField] GameObject Book;
 
     private bool isPause = false;
 
@@ -18,6 +19,7 @@ public class GamePause : MonoBehaviour
         pauseMenuUI.SetActive(false);
         background.SetActive(false);
         Setting.SetActive(false);
+        Book.SetActive(false);
     }
 
     // Update is called once per frame
@@ -52,6 +54,14 @@ public class GamePause : MonoBehaviour
     public void ReturnToMainMenu()
     {
         SceneManager.LoadScene("Title");
+    }
+    public void OpenBook()
+    {
+        Book.SetActive(true);
+    }
+    public void CloseBook()
+    {
+        Book.SetActive(false);
     }
     public void CloseSetting()
     {
