@@ -1,6 +1,7 @@
-using System.Collections;
+ï»¿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public enum EmotionState
 {
@@ -17,11 +18,11 @@ public enum SkillState
 
 public class Player : MonoBehaviour
 {
-    [Header("ÇÃ·¹ÀÌ¾î ¿òÁ÷ÀÓ")]
+    [Header("í”Œë ˆì´ì–´")]
     public float moveSpeed;
     public float jumpPower;
 
-    [Header("ÇÃ·¹ÀÌ¾î »óÅÂ")]
+    [Header("ui")]
     public int maxHP = 100;
     public int currentHP;
     public int attackDamage;
@@ -31,7 +32,10 @@ public class Player : MonoBehaviour
     public bool isSkill = false;
     public Animator anim;
     public EmotionState emotionState;
-
+    public Image Image;
+    public Image Image2;
+    public List<Sprite> emoge;
+    public Slider healthSlider;
     public enum AnimState
     {
         IDLE,
@@ -43,7 +47,7 @@ public class Player : MonoBehaviour
 
     private Rigidbody2D rb;
     private SpriteRenderer sr;
-    public bool isGround; // ¹Ù´Ú¿¡ ´ê¾Ò´ÂÁö Ã¼Å©ÇÏ´Â º¯¼ö
+    public bool isGround;
     private float moveInput;
     private Coroutine changeCoroutine;
 
@@ -60,35 +64,35 @@ public class Player : MonoBehaviour
     void Start()
     {
         changeCoroutine = StartCoroutine(EmoChangeState());
+        UpdateHealthBar();
     }
 
     void Update()
     {
         moveInput = Input.GetAxis("Horizontal");
 
-        // ¹æÇâ ÀüÈ¯ (AÅ°´Â ¿ŞÂÊ, DÅ°´Â ¿À¸¥ÂÊ)
-        if (moveInput < 0) // ¿ŞÂÊÀ¸·Î ÀÌµ¿
+        
+        if (moveInput < 0) 
         {
-            sr.flipX = false; // ¿ŞÂÊÀ» º¸°Ô ÇÔ
+            sr.flipX = false; 
         }
-        else if (moveInput > 0) // ¿À¸¥ÂÊÀ¸·Î ÀÌµ¿
+        else if (moveInput > 0) 
         {
-            sr.flipX = true; // ¿À¸¥ÂÊÀ» º¸°Ô ÇÔ
+            sr.flipX = true; 
         }
 
-        // ½ºÆäÀÌ½º¹Ù·Î Á¡ÇÁ Ã³¸®
         if (Input.GetKeyDown(KeyCode.Space) && isGround)
         {
-            rb.velocity = new Vector2(rb.velocity.x, jumpPower); // ¼öÆò ¼Óµµ´Â ±×´ë·Î µÎ°í, ¼öÁ÷ ¼Óµµ¸¸ jumpPower·Î º¯°æ
-            AnimOn(2); // Á¡ÇÁ ¾Ö´Ï¸ŞÀÌ¼Ç
+            rb.velocity = new Vector2(rb.velocity.x, jumpPower); 
+            AnimOn(2); 
         }
-        else if (Mathf.Abs(moveInput) > 0.1f) // ÁÂ¿ì ÀÌµ¿ Ã³¸®
+        else if (Mathf.Abs(moveInput) > 0.1f) 
         {
-            AnimOn(1); // °È±â ¾Ö´Ï¸ŞÀÌ¼Ç
+            AnimOn(1); 
         }
         else
         {
-            AnimOn(0); // ´ë±â ¾Ö´Ï¸ŞÀÌ¼Ç
+            AnimOn(0); 
         }
 
         if (changeDelay > 0f) changeDelay -= Time.deltaTime;
@@ -105,20 +109,18 @@ public class Player : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Q) && skillDelay <= 0f && !isSkill)
         {
             StartCoroutine(ActiveSkill());
-            Debug.Log("½ºÅ³ »ç¿ë");
+            Debug.Log("ìŠ¤í‚¬ í™œì„±í™”");
         }
     }
 
 
     void FixedUpdate()
     {
-        // Raycast·Î ¹Ù´Ú È®ÀÎ (Player À§Ä¡¿¡¼­ ¾Æ·¡·Î Ray¸¦ ½÷¼­ ¹Ù´Ú °¨Áö)
-        isGround = Physics2D.Raycast(transform.position, Vector2.down, 1.5f, LayerMask.GetMask("Ground")); // 0.2f ¹üÀ§·Î Ray¸¦ ½÷¼­ ¹Ù´ÚÀ» Ã¼Å©
+        isGround = Physics2D.Raycast(transform.position, Vector2.down, 1.5f, LayerMask.GetMask("Ground"));
 
-        // ¼öÆò ÀÌµ¿
         rb.velocity = new Vector2(moveInput * moveSpeed, rb.velocity.y);
 
-        rb.drag = isGround ? 4f : 0f; // ¶¥¿¡ ÀÖÀ» ¶§´Â ¸¶ÂûÀ» Áà¼­ ¹Ì²ô·¯ÁöÁö ¾Êµµ·Ï Ã³¸®
+        rb.drag = isGround ? 4f : 0f; 
     }
 
     IEnumerator EmoChangeState()
@@ -137,20 +139,26 @@ public class Player : MonoBehaviour
                     moveSpeed = 7f;
                     attackDamage = 10;
                     attackDelay = 1f;
-                    Debug.Log("È¸º¹");
+                    Debug.Log("í–‰ë³µ");
+                    Image.sprite = emoge[0];
+                    Image2.sprite = emoge[1];
                     break;
 
                 case EmotionState.SAD:
                     moveSpeed = 4f;
                     attackDamage = 20;
                     attackDelay = 2f;
+                    Image.sprite = emoge[1];
+                    Image2.sprite = emoge[2];
                     break;
 
                 case EmotionState.ANGER:
                     moveSpeed = 10f;
                     attackDamage = 15;
                     attackDelay = 0.3f;
-                    Debug.Log("¾ÆÇÄ");
+                    Debug.Log("ë¶„ë…¸");
+                    Image.sprite = emoge[2];
+                    Image2.sprite = emoge[0];
                     break;
             }
             yield return new WaitForSeconds(1f);
@@ -164,7 +172,7 @@ public class Player : MonoBehaviour
         moveSpeed = 10f;
         attackDamage = 20;
         attackDelay = 0.3f;
-        Debug.Log("½ºÅ³ »ç¿ëÁß");
+        Debug.Log("ìŠ¤í‚¬í™œì„±í™”");
 
         yield return new WaitForSeconds(7f);
         isSkill = false;
@@ -175,11 +183,32 @@ public class Player : MonoBehaviour
         }
         changeCoroutine = StartCoroutine(EmoChangeState());
 
-        Debug.Log("½ºÅ³ Á¾·á");
+        Debug.Log("ìŠ¤í‚¬ ë¹„í™œì„±í™”");
     }
 
     void AnimOn(int n)
     {
-        anim.SetInteger("PlayerAnimState", n); // ¾Ö´Ï¸ŞÀÌ¼Ç »óÅÂ º¯°æ
+        anim.SetInteger("PlayerAnimState", n); 
+    }
+    private void UpdateHealthBar()
+    {
+        // ì²´ë ¥ ë¹„ìœ¨ì„ ê³„ì‚°í•˜ì—¬ ìŠ¬ë¼ì´ë”ì˜ ê°’ ì„¤ì •
+        healthSlider.value = (float)currentHP / maxHP; // Sliderì˜ Valueë¥¼ ì²´ë ¥ ë¹„ìœ¨ë¡œ ì„¤ì •
+    }
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (collision.gameObject.CompareTag("Enemy"))
+        {
+            TakeDamage(10);
+        }
+    }
+    private void TakeDamage(int damage)
+    {
+        currentHP -= damage;
+        if (currentHP <= 0)
+        {
+            Debug.Log("ê²Œì„ ì˜¤ë²„");
+        }
+        UpdateHealthBar(); // ì²´ë ¥ë°” ì—…ë°ì´íŠ¸
     }
 }
