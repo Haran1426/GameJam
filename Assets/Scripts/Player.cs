@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
 
 public enum EmotionState
@@ -22,99 +21,140 @@ public class Player : MonoBehaviour
     public float moveSpeed;
     public float jumpPower;
 
-    [Header("¶¥ ®G")]
-    public Transform groundCheck;
-    public float groundRabius = 0.2f;
-    public LayerMask GroundLayer;
-
     [Header("ÇÃ·¹ÀÌ¾î »óÅÂ")]
     public int maxHP = 100;
     public int currentHP;
-    public int attackDamege;
-    public float attackDelay = 1f;
-    public float changeDelay = 2f;
-    public float skillDelay = 15f;
+    public int attackDamage;
+    private float attackDelay = 1f;
+    private float changeDelay = 2f;
+    private float skillDelay = 15f;
     public bool isSkill = false;
-    public EmotionState emostate;
+    public Animator anim;
+    public EmotionState emotionState;
+
+    public enum AnimState
+    {
+        IDLE,
+        WALK,
+        JUMP,
+        ATTACK
+    }
+    public AnimState animState = AnimState.IDLE;
 
     private Rigidbody2D rb;
-    private bool isGround;
+    private SpriteRenderer sr;
+    public bool isGround; // ¹Ù´Ú¿¡ ´ê¾Ò´ÂÁö Ã¼Å©ÇÏ´Â º¯¼ö
     private float moveInput;
+    private Coroutine changeCoroutine;
 
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
+        sr = rb.GetComponent<SpriteRenderer>();
+        anim = GetComponent<Animator>();
         currentHP = maxHP;
         StartCoroutine(EmoChangeState());
-        emostate = EmotionState.HAPPY;
+        emotionState = EmotionState.HAPPY;
+    }
+
+    void Start()
+    {
+        changeCoroutine = StartCoroutine(EmoChangeState());
     }
 
     void Update()
     {
         moveInput = Input.GetAxis("Horizontal");
 
-        if (Input.GetButtonDown("Jump") && isGround) rb.velocity = new Vector2(rb.velocity.x, jumpPower);
+        // ¹æÇâ ÀüÈ¯ (AÅ°´Â ¿ÞÂÊ, DÅ°´Â ¿À¸¥ÂÊ)
+        if (moveInput < 0) // ¿ÞÂÊÀ¸·Î ÀÌµ¿
+        {
+            sr.flipX = false; // ¿ÞÂÊÀ» º¸°Ô ÇÔ
+        }
+        else if (moveInput > 0) // ¿À¸¥ÂÊÀ¸·Î ÀÌµ¿
+        {
+            sr.flipX = true; // ¿À¸¥ÂÊÀ» º¸°Ô ÇÔ
+        }
 
-        if(changeDelay > 0f) changeDelay -= Time.deltaTime;
-        if(skillDelay > 0f) skillDelay -= Time.deltaTime;
+        // ½ºÆäÀÌ½º¹Ù·Î Á¡ÇÁ Ã³¸®
+        if (Input.GetKeyDown(KeyCode.Space) && isGround)
+        {
+            rb.velocity = new Vector2(rb.velocity.x, jumpPower); // ¼öÆò ¼Óµµ´Â ±×´ë·Î µÎ°í, ¼öÁ÷ ¼Óµµ¸¸ jumpPower·Î º¯°æ
+            AnimOn(2); // Á¡ÇÁ ¾Ö´Ï¸ÞÀÌ¼Ç
+        }
+        else if (Mathf.Abs(moveInput) > 0.1f) // ÁÂ¿ì ÀÌµ¿ Ã³¸®
+        {
+            AnimOn(1); // °È±â ¾Ö´Ï¸ÞÀÌ¼Ç
+        }
+        else
+        {
+            AnimOn(0); // ´ë±â ¾Ö´Ï¸ÞÀÌ¼Ç
+        }
+
+        if (changeDelay > 0f) changeDelay -= Time.deltaTime;
+        if (skillDelay > 0f) skillDelay -= Time.deltaTime;
 
         if (Input.GetKeyDown(KeyCode.E) && changeDelay <= 0f && !isSkill)
         {
-            emostate = (EmotionState)(((int)emostate + 1) % System.Enum.GetValues(typeof(EmotionState)).Length);
+            emotionState = (EmotionState)(((int)emotionState + 1) % System.Enum.GetValues(typeof(EmotionState)).Length);
             EmoChangeState();
-            Debug.Log(emostate);
+            Debug.Log(emotionState);
             changeDelay = 2f;
         }
 
-        if(Input.GetKeyDown(KeyCode.Q) && skillDelay <= 0f && !isSkill)
+        if (Input.GetKeyDown(KeyCode.Q) && skillDelay <= 0f && !isSkill)
         {
             StartCoroutine(ActiveSkill());
             Debug.Log("½ºÅ³ »ç¿ë");
         }
-        
     }
+
 
     void FixedUpdate()
     {
-        isGround = Physics2D.OverlapCircle(groundCheck.position, groundRabius, GroundLayer);
+        // Raycast·Î ¹Ù´Ú È®ÀÎ (Player À§Ä¡¿¡¼­ ¾Æ·¡·Î Ray¸¦ ½÷¼­ ¹Ù´Ú °¨Áö)
+        isGround = Physics2D.Raycast(transform.position, Vector2.down, 1.5f, LayerMask.GetMask("Ground")); // 0.2f ¹üÀ§·Î Ray¸¦ ½÷¼­ ¹Ù´ÚÀ» Ã¼Å©
 
+        // ¼öÆò ÀÌµ¿
         rb.velocity = new Vector2(moveInput * moveSpeed, rb.velocity.y);
 
-        rb.drag = isGround ? moveSpeed : 0;
+        rb.drag = isGround ? 4f : 0f; // ¶¥¿¡ ÀÖÀ» ¶§´Â ¸¶ÂûÀ» Áà¼­ ¹Ì²ô·¯ÁöÁö ¾Êµµ·Ï Ã³¸®
     }
 
     IEnumerator EmoChangeState()
     {
         while (true)
         {
-            switch (emostate)
+            if (isSkill)
             {
-                case (EmotionState.HAPPY):
+                yield return null;
+                continue;
+            }
+
+            switch (emotionState)
+            {
+                case EmotionState.HAPPY:
                     moveSpeed = 7f;
-                    attackDamege = 10;
+                    attackDamage = 10;
                     attackDelay = 1f;
                     Debug.Log("È¸º¹");
-
                     break;
 
-                case (EmotionState.SAD):
+                case EmotionState.SAD:
                     moveSpeed = 4f;
-                    attackDamege = 20;
+                    attackDamage = 20;
                     attackDelay = 2f;
-
                     break;
 
-                case (EmotionState.ANGER):
+                case EmotionState.ANGER:
                     moveSpeed = 10f;
-                    attackDamege = 15;
+                    attackDamage = 15;
                     attackDelay = 0.3f;
                     Debug.Log("¾ÆÇÄ");
-
                     break;
             }
             yield return new WaitForSeconds(1f);
         }
-        
     }
 
     IEnumerator ActiveSkill()
@@ -122,15 +162,24 @@ public class Player : MonoBehaviour
         isSkill = true;
 
         moveSpeed = 10f;
-        attackDamege = 20;
+        attackDamage = 20;
         attackDelay = 0.3f;
         Debug.Log("½ºÅ³ »ç¿ëÁß");
 
         yield return new WaitForSeconds(7f);
         isSkill = false;
-        skillDelay = 10f;
-        EmoChangeState();
+        skillDelay = 15f;
+        if (changeCoroutine != null)
+        {
+            StopCoroutine(changeCoroutine);
+        }
+        changeCoroutine = StartCoroutine(EmoChangeState());
+
         Debug.Log("½ºÅ³ Á¾·á");
     }
 
+    void AnimOn(int n)
+    {
+        anim.SetInteger("PlayerAnimState", n); // ¾Ö´Ï¸ÞÀÌ¼Ç »óÅÂ º¯°æ
+    }
 }
