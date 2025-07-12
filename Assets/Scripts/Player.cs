@@ -1,7 +1,8 @@
-using System.Collections;
+ï»¿using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.UI;
 
 public enum EmotionState
 {
@@ -18,16 +19,16 @@ public enum SkillState
 
 public class Player : MonoBehaviour
 {
-    [Header("ÇÃ·¹ÀÌ¾î ¿òÁ÷ÀÓ")]
+    [Header("í”Œë ˆì´ì–´")]
     public float moveSpeed;
     public float jumpPower;
 
-    [Header("¶¥ ®G")]
+    [Header("ë•… ì²´í¬")]
     public Transform groundCheck;
     public float groundRabius = 0.2f;
     public LayerMask GroundLayer;
 
-    [Header("ÇÃ·¹ÀÌ¾î »óÅÂ")]
+    [Header("ui")]
     public int maxHP = 100;
     public int currentHP;
     public int attackDamege;
@@ -36,6 +37,9 @@ public class Player : MonoBehaviour
     public float skillDelay = 15f;
     public bool isSkill = false;
     public EmotionState emostate;
+    public Image image; //í˜„ì¬ê°ì • ì´ë¯¸ì§€
+    public Image image2; //ë‹¤ìŒê°ì • ì´ë¯¸ì§€
+    public List<Sprite> emoge; //ê°ì • ì´ëª¨í‹°ì½˜ì´ ë‹´ê¸´ ë¦¬ìŠ¤íŠ¸
 
     private Rigidbody2D rb;
     private bool isGround;
@@ -69,7 +73,7 @@ public class Player : MonoBehaviour
         if(Input.GetKeyDown(KeyCode.Q) && skillDelay <= 0f && !isSkill)
         {
             StartCoroutine(ActiveSkill());
-            Debug.Log("½ºÅ³ »ç¿ë");
+            Debug.Log("ìŠ¤í‚¬í´ë¦­!");
         }
         
     }
@@ -93,23 +97,26 @@ public class Player : MonoBehaviour
                     moveSpeed = 7f;
                     attackDamege = 10;
                     attackDelay = 1f;
-                    Debug.Log("È¸º¹");
-
+                    Debug.Log("í–‰ë³µ");
+                    image.sprite = emoge[0];
+                    image2.sprite = emoge[1];
                     break;
 
                 case (EmotionState.SAD):
                     moveSpeed = 4f;
                     attackDamege = 20;
                     attackDelay = 2f;
-
+                    image.sprite = emoge[1];
+                    image2.sprite = emoge[2];
                     break;
 
                 case (EmotionState.ANGER):
                     moveSpeed = 10f;
                     attackDamege = 15;
                     attackDelay = 0.3f;
-                    Debug.Log("¾ÆÇÄ");
-
+                    Debug.Log("í™”");
+                    image.sprite = emoge[2];
+                    image2.sprite = emoge[0];
                     break;
             }
             yield return new WaitForSeconds(1f);
@@ -124,13 +131,13 @@ public class Player : MonoBehaviour
         moveSpeed = 10f;
         attackDamege = 20;
         attackDelay = 0.3f;
-        Debug.Log("½ºÅ³ »ç¿ëÁß");
+        Debug.Log("ìŠ¤í‚¬ í™œì„±í™”");
 
         yield return new WaitForSeconds(7f);
         isSkill = false;
         skillDelay = 10f;
         EmoChangeState();
-        Debug.Log("½ºÅ³ Á¾·á");
+        Debug.Log("ìŠ¤í‚¬ ë¹„í™œì„±í™”");
     }
 
 }
