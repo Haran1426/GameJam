@@ -47,7 +47,8 @@ public class Player : MonoBehaviour
         IDLE,
         WALK,
         JUMP,
-        DASH
+        DASH,
+        ATTACK
     }
 
     private Rigidbody2D rb;
@@ -122,6 +123,11 @@ public class Player : MonoBehaviour
         {
             StartCoroutine(ActiveSkill());
             Debug.Log("스킬 사용");
+        }
+
+        if (Input.GetMouseButtonDown(0))
+        {
+            AnimOn((int)AnimState.ATTACK);
         }
     }
 

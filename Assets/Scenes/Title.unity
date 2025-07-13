@@ -2008,7 +2008,7 @@ AudioSource:
   m_Enabled: 1
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: -1273901420468426733, guid: 754ab1081eb9b074eb4d0a7dda0554bb, type: 2}
-  m_audioClip: {fileID: 8300000, guid: ea7b19a6851dcf14db052845a6454caf, type: 3}
+  m_audioClip: {fileID: 8300000, guid: ffc95b83c9f8344ebb6214eb5b0b3087, type: 3}
   m_PlayOnAwake: 1
   m_Volume: 1
   m_Pitch: 1
@@ -2751,7 +2751,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   audioslider: {fileID: 633324761}
-  main: {fileID: 528886486}
+  main: {fileID: 1734613821}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
