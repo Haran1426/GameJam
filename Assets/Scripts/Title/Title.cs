@@ -14,7 +14,7 @@ public class Title : MonoBehaviour
     }
     public void gameStart()
     {
-        SceneManager.LoadScene("InGame");
+        SceneManager.LoadScene("Tutorials");
     }
     public void Setting()
     {
