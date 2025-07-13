@@ -1,6 +1,7 @@
-using System.Collections;
+ï»¿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
 
 public enum EmotionState
@@ -18,11 +19,11 @@ public enum SkillState
 
 public class Player : MonoBehaviour
 {
-    [Header("ÇÃ·¹ÀÌ¾î ¿òÁ÷ÀÓ")]
+    [Header("ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½")]
     public float moveSpeed;
     public float jumpPower;
 
-    [Header("ÇÃ·¹ÀÌ¾î »óÅÂ")]
+    [Header("ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ ï¿½ï¿½ï¿½ï¿½")]
     public int maxHP = 100;
     public int currentHP;
     public int attackDamage;
@@ -31,10 +32,14 @@ public class Player : MonoBehaviour
     public float skillDelay = 15f;
     public bool isSkill = false;
     public Animator anim;
-    public EmotionState emotionState;
+    public EmotionState emotionState; 
+    public List<Sprite> emoge;
+    public Image Image;
+    public Image Image2;
+    public Slider hpbar;
     bool Jump;
 
-    [Header("´ë½¬ ¼³Á¤")]
+    [Header("ï¿½ë½¬ ï¿½ï¿½ï¿½ï¿½")]
     public float dashSpeed = 20f;
     public float dashDuration = 0.2f;
     public float dashCooldown = 1f;
@@ -71,19 +76,20 @@ public class Player : MonoBehaviour
     void Start()
     {
         changeCoroutine = StartCoroutine(EmoChangeState());
+        UpdateHealthBar();
     }
 
     void Update()
     {
         moveInput = Input.GetAxis("Horizontal");
 
-        // ¹æÇâ ÀüÈ¯
+        // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½È¯
         if (moveInput < 0)
             sr.flipX = false;
         else if (moveInput > 0)
             sr.flipX = true;
 
-        // Á¡ÇÁ ÀÔ·Â
+        // ï¿½ï¿½ï¿½ï¿½ ï¿½Ô·ï¿½
         if (Input.GetKeyDown(KeyCode.Space) && isGround && !Jump && !isDashing)
         {
             Jump = true;
@@ -91,13 +97,13 @@ public class Player : MonoBehaviour
             AnimOn((int)AnimState.JUMP);
         }
 
-        // ´ë½¬ ÀÔ·Â
+        // ï¿½ë½¬ ï¿½Ô·ï¿½
         if (Input.GetKeyDown(KeyCode.LeftShift) && !isDashing && dashCooldownTimer <= 0f)
         {
             StartCoroutine(Dash());
         }
 
-        // ÀÌµ¿ & ´ë±â ¾Ö´Ï¸ÞÀÌ¼Ç
+        // ï¿½Ìµï¿½ & ï¿½ï¿½ï¿½ ï¿½Ö´Ï¸ï¿½ï¿½Ì¼ï¿½
         if (!Jump && !isDashing)
         {
             if (Mathf.Abs(moveInput) > 0.1f)
@@ -106,7 +112,7 @@ public class Player : MonoBehaviour
                 AnimOn((int)AnimState.IDLE);
         }
 
-        // °¨Á¤ ÀüÈ¯
+        // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½È¯
         if (changeDelay > 0f) changeDelay -= Time.deltaTime;
         if (skillDelay > 0f) skillDelay -= Time.deltaTime;
 
@@ -118,11 +124,11 @@ public class Player : MonoBehaviour
             changeDelay = 2f;
         }
 
-        // ½ºÅ³ ¹ßµ¿
+        // ï¿½ï¿½Å³ ï¿½ßµï¿½
         if (Input.GetKeyDown(KeyCode.Q) && skillDelay <= 0f && !isSkill)
         {
             StartCoroutine(ActiveSkill());
-            Debug.Log("½ºÅ³ »ç¿ë");
+            Debug.Log("ï¿½ï¿½Å³ ï¿½ï¿½ï¿½");
         }
 
         if (Input.GetMouseButtonDown(0))
@@ -184,18 +190,24 @@ public class Player : MonoBehaviour
                     moveSpeed = 7f;
                     attackDamage = 10;
                     attackDelay = 1f;
-                    Debug.Log("È¸º¹");
+                    Debug.Log("È¸ï¿½ï¿½");
+                    Image.sprite = emoge[0];
+                    Image.sprite = emoge[1];
                     break;
                 case EmotionState.SAD:
                     moveSpeed = 4f;
                     attackDamage = 20;
                     attackDelay = 2f;
+                    Image.sprite = emoge[1];
+                    Image.sprite = emoge[2];
                     break;
                 case EmotionState.ANGER:
                     moveSpeed = 10f;
                     attackDamage = 15;
                     attackDelay = 0.3f;
-                    Debug.Log("¾ÆÇÄ");
+                    Image.sprite = emoge[2];
+                    Image.sprite = emoge[0];
+                    Debug.Log("ï¿½ï¿½ï¿½ï¿½");
                     break;
             }
             yield return new WaitForSeconds(1f);
@@ -209,7 +221,7 @@ public class Player : MonoBehaviour
         moveSpeed = 10f;
         attackDamage = 20;
         attackDelay = 0.3f;
-        Debug.Log("½ºÅ³ »ç¿ëÁß");
+        Debug.Log("ï¿½ï¿½Å³ ï¿½ï¿½ï¿½ï¿½ï¿½");
 
         yield return new WaitForSeconds(7f);
         isSkill = false;
@@ -220,11 +232,44 @@ public class Player : MonoBehaviour
 
         changeCoroutine = StartCoroutine(EmoChangeState());
 
-        Debug.Log("½ºÅ³ Á¾·á");
+        Debug.Log("ï¿½ï¿½Å³ ï¿½ï¿½ï¿½ï¿½");
     }
 
     void AnimOn(int n)
     {
         anim.SetInteger("PlayerAnimState", n);
+    }
+    private void UpdateHealthBar()
+    {
+        // ì²´ë ¥ ë¹„ìœ¨ì„ ê³„ì‚°í•˜ì—¬ ìŠ¬ë¼ì´ë”ì˜ ê°’ ì„¤ì •
+        hpbar.value = (float)currentHP / maxHP; // Sliderì˜ Valueë¥¼ ì²´ë ¥ ë¹„ìœ¨ë¡œ ì„¤ì •
+    }
+
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (collision.gameObject.CompareTag("Enemy"))
+        {
+            // í”¼í•´ë¥¼ ë°›ì•˜ì„ ê²½ìš°
+            TakeDamage(10);
+        }
+        if (collision.gameObject.CompareTag("Goal"))
+        {
+            SceneManager.LoadScene("Game 1");
+        }
+        if (collision.gameObject.CompareTag("Goal2"))
+        {
+            SceneManager.LoadScene("Game 3");
+        }
+        if (collision.gameObject.CompareTag("Goal1"))
+        {
+            SceneManager.LoadScene("Game 2");
+        }
+    }
+
+    private void TakeDamage(int damage)
+    {
+        currentHP -= damage;
+        if (currentHP < 0) currentHP = 0; // ì²´ë ¥ì€ 0 ë¯¸ë§Œìœ¼ë¡œ ë‚´ë ¤ê°€ì§€ ì•ŠìŒ
+        UpdateHealthBar(); // ì²´ë ¥ë°” ì—…ë°ì´íŠ¸
     }
 }
